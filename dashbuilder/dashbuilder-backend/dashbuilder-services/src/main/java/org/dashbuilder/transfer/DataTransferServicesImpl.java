@@ -63,6 +63,7 @@ import org.uberfire.java.nio.file.SimpleFileVisitor;
 import org.uberfire.java.nio.file.attribute.BasicFileAttributes;
 import org.uberfire.rpc.SessionInfo;
 import org.uberfire.spaces.SpacesAPI;
+import org.uberfire.ext.layout.editor.impl.*;
 
 import static org.dashbuilder.dataset.DataSetDefRegistryCDI.DATASET_EXT;
 import static org.uberfire.ext.plugin.model.Plugin.FILE_EXT;
@@ -75,7 +76,7 @@ public class DataTransferServicesImpl implements DataTransferServices {
     private static final Logger LOGGER = LoggerFactory.getLogger(DataTransferServicesImpl.class);
     private IOService ioService;
     private FileSystem datasetsFS;
-    private FileSystem perspectivesFS;
+    private static FileSystem perspectivesFS;
     private FileSystem navigationFS;
     private FileSystem systemFS;
     private DataSetDefRegistryCDI dataSetDefRegistryCDI;
@@ -622,6 +623,11 @@ public class DataTransferServicesImpl implements DataTransferServices {
             return false;
         };
     }
+
+
+   
+    
+
 
     private boolean exists(String file) {
         return java.nio.file.Files.exists(java.nio.file.Paths.get(file));
