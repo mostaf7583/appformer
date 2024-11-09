@@ -24,6 +24,8 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.jboss.errai.bus.server.annotations.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.uberfire.backend.vfs.Path;
 import org.uberfire.ext.editor.commons.backend.service.SaveAndRenameServiceImpl;
 import org.uberfire.ext.editor.commons.file.DefaultMetadata;
@@ -33,12 +35,12 @@ import org.uberfire.ext.plugin.backend.PluginServicesImpl;
 import org.uberfire.ext.plugin.model.LayoutEditorModel;
 import org.uberfire.ext.plugin.model.Plugin;
 import org.uberfire.ext.plugin.model.PluginType;
-import org.uberfire.spaces.SpacesAPI;
 
 @Service
 @ApplicationScoped
 public class PerspectiveServicesImpl implements PerspectiveServices {
 
+    private static final Logger log = LoggerFactory.getLogger(PerspectiveServicesImpl.class);
     private PluginServicesImpl pluginServices;
     private LayoutServicesImpl layoutServices;
     private SaveAndRenameServiceImpl<LayoutTemplate, DefaultMetadata> saveAndRenameService;
@@ -71,6 +73,54 @@ public class PerspectiveServicesImpl implements PerspectiveServices {
                 .map(this::getLayoutTemplate)
                 .collect(Collectors.toList());
     }
+
+//    public void  listLayoutTemplateNames() {
+//        ArrayList<String> names = new ArrayList<>();
+//        for (Plugin plugin : pluginServices.listPlugins(PluginType.PERSPECTIVE_LAYOUT)) {
+//            names.add(plugin.getName());
+//        }
+//        // save the names of the layout templates to file in path /home/templayouts.json
+//        saveLayoutTemplateNames(names);
+//
+//    }
+
+    @Override
+    public Collection<String> listLayoutTemplateNames() {
+        log.info( this.getClass().getName()+ ".listLayoutTemplateNames()");
+        return pluginServices.listPlugins(PluginType.PERSPECTIVE_LAYOUT).stream()
+                .map(plugin -> getLayoutTemplate(plugin).getName())
+                .collect(Collectors.toList());
+    }
+
+//
+//    public void saveLayoutTemplateNames(ArrayList<String> names) {
+//        // Path to the file
+//        String filePath = "/home/templayouts.json";
+//        File file = new File(filePath);
+//
+//        // Check if the file exists
+//        if (!file.exists()) {
+//            try {
+//                // Create the file if it does not exist
+//                file.createNewFile();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//                return;
+//            }
+//        }
+//
+//        // Convert the ArrayList to JSON format
+//        Gson gson = new Gson();
+//        String json = gson.toJson(names);
+//
+//        // Write the JSON string to the file
+//        try (FileWriter writer = new FileWriter(file)) {
+//            writer.write(json);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
+
 
     @Override
     public LayoutTemplate getLayoutTemplate(String perspectiveName) {

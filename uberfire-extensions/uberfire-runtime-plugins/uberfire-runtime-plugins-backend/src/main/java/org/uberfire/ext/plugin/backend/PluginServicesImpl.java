@@ -815,6 +815,8 @@ public class PluginServicesImpl implements PluginServices {
             getIoService().startBatch(getFileSystem(plugin),
                                       commentedOption(commitMessage));
 
+            logger.info(getPluginPath(plugin).toString()+" "+plugin.getType().toString().toLowerCase()+"search code :7583");
+
             final Path itemsPath = getLayoutEditorPath(getPluginPath(plugin),
                                                        plugin.getType().toString().toLowerCase());
 

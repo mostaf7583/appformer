@@ -37,6 +37,8 @@ public interface PerspectiveServices extends SupportsCopy,
 
     Collection<LayoutTemplate> listLayoutTemplates();
 
+    Collection<String> listLayoutTemplateNames();
+
     LayoutTemplate getLayoutTemplate(String perspectiveName);
 
     LayoutTemplate getLayoutTemplate(Path perspectivePath);
@@ -46,4 +48,5 @@ public interface PerspectiveServices extends SupportsCopy,
     LayoutTemplate convertToLayoutTemplate(String layoutModel);
 
     Path saveLayoutTemplate(Path perspectivePath, LayoutTemplate layoutTemplate, String commitMessage);
+
 }
