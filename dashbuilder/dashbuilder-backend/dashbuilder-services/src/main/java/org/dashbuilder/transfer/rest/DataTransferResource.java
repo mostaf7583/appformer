@@ -17,25 +17,29 @@
 package org.dashbuilder.transfer.rest;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.inject.Named;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
 import org.dashbuilder.transfer.DataTransferExportModel;
 import org.dashbuilder.transfer.DataTransferServices;
-import org.dashbuilder.transfer.DataTransferServicesImpl;
+import org.guvnor.rest.backend.UserManagementResourceHelper;
+import org.guvnor.rest.client.PermissionResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.uberfire.ext.layout.editor.impl.PerspectiveServicesImpl;
+import org.uberfire.ext.layout.editor.api.editor.LayoutTemplate;
+import org.uberfire.ext.security.management.api.service.UserManagerService;
 import org.uberfire.io.IOService;
 import org.uberfire.java.nio.file.Paths;
-
+import org.uberfire.security.authz.AuthorizationPolicy;
+import org.uberfire.security.impl.authz.DefaultPermissionManager;
 
 @ApplicationScoped
 @Path("dashbuilder")
@@ -52,6 +56,9 @@ public class DataTransferResource {
 
     @Inject
     private org.uberfire.ext.layout.editor.api.PerspectiveServices perspectiveServices;
+
+    @Inject
+    AuthorizationPolicy authorizationPolicy;
 
     @GET
     @Path("export")
@@ -72,19 +79,87 @@ public class DataTransferResource {
         }
     }
 
+    @Inject
+    DefaultPermissionManager defaultPermissionManager;
+
+    @Inject
+    UserManagementResourceHelper resourceHelper;
+    @Inject
+    private HttpServletRequest request;
+
     @GET
-    @Path("pages/{perspectiveName}")
+    @Path("pages/{perspectiveName}/content")
     @Produces("application/json")
-    public Response getPages(@javax.ws.rs.PathParam("perspectiveName") String perspectiveName) {
+    public Response getPagesContent(@PathParam("perspectiveName") String perspectiveName ) {
+
+    //get user from basic auth
+        String fromUsername = request.getUserPrincipal().getName();
+        PermissionResponse pc = resourceHelper.getUserPermissions(fromUsername);
+        boolean hasPermission = pc.getPages().getRead().getExceptions().contains(perspectiveName);
+
+        logger.info("Checking permissions for perspective: {} from user: {}", pc.getHomePage(), fromUsername);
+
+        if (!hasPermission) {
+            String errorMessage = "User " + fromUsername + " does not have permission to access perspective: " + perspectiveName;
+            logger.error(errorMessage);
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity(errorMessage)
+                    .build();
+        }
+
         try {
             return Response.ok(perspectiveServices.getLayoutTemplate(perspectiveName)).build();
         } catch (Exception e) {
             String errorMessage = "Error getting pages for perspective: " + perspectiveName + ". " + e.getMessage();
-            logger.error(errorMessage);
-            logger.info("Not able to get pages for perspective: " + perspectiveName, e);
+            logger.error(errorMessage, e);
             return Response.serverError()
                     .entity(errorMessage)
                     .build();
         }
     }
+
+
+    @Inject
+    private UserManagerService userManagerService;
+
+
+    @GET
+    @Path("pages/")
+    @Produces("application/json")
+    public Response getPages() {
+        String userName = request.getUserPrincipal().getName();
+        assertObjectExists(userManagerService.get(userName), "user", userName);
+
+        Collection<LayoutTemplate> layoutTemplatesCollection = perspectiveServices.listLayoutTemplates();
+        List<LayoutTemplate> layoutTemplates = new ArrayList<>(layoutTemplatesCollection);
+
+        PermissionResponse pc = resourceHelper.getUserPermissions(userName);
+        logger.info("Retrieved permissions for user: {}", userName);
+
+        Iterator<LayoutTemplate> iterator = layoutTemplates.iterator();
+        while (iterator.hasNext()) {
+            LayoutTemplate layoutTemplate = iterator.next();
+            logger.info("Checking permissions for layout template: {}", layoutTemplate.getName());
+            boolean hasPermission = pc.getPages().getRead().getExceptions().contains(layoutTemplate.getName()) || pc.getPages().getRead().isAccess();
+            logger.info("User {} has permission for layout template {}: {}", userName, layoutTemplate.getName(), hasPermission);
+
+            if (!hasPermission) {
+                logger.info("Removing layout template: {} due to lack of permissions", layoutTemplate.getName());
+                iterator.remove();
+            }
+        }
+
+        return Response.ok(layoutTemplates).build();
+    }
+    protected void assertObjectExists(final Object o,
+                                      final String objectInfo,
+                                      final String objectName) {
+        if (o == null) {
+            throw new WebApplicationException(String.format("Could not find %s with name %s.", objectInfo, objectName),
+                    Response.status(Response.Status.NOT_FOUND).build());
+        }
+    }
+
+
+
 }
